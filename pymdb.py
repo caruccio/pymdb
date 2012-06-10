@@ -65,10 +65,15 @@ __license__ = 'BSD'
 __author__ = """Mateus Caruccio <mateus@caruccio.com>"""
 __copyright__ = 'Copyright 2012 Mateus Caruccio'
 
-__all__ = [ 'Movie' ]
+__all__ = [ 'Movie', 'MovieError' ]
 
 import sys, requests
 import json
+
+DEFAULT_TIMEOUT = 15
+
+class MovieError(Exception):
+	'''There was an error while retrieving movie information'''
 
 class Movie(object):
 	'''Retrieve information from IMDBAPI (http::/www.imdbapi.com, please support them).
@@ -86,7 +91,7 @@ class Movie(object):
 	fetch()ed from IMDBAPI. To refresh the data simply call fetch(). All attributes
 	will be fetch()ed at once, not one by one.'''
 
-	def __init__(self, title, url=None, params=None, timeout=15):
+	def __init__(self, title, url=None, params=None, timeout=DEFAULT_TIMEOUT):
 		self.req_title = title
 		self.req_url = url if url else 'http://www.imdbapi.com/'
 		self.req_params = params if params else { 'r': 'json', 'plot': 'full', 't': self.req_title }
@@ -100,13 +105,21 @@ class Movie(object):
 
 			Attribute names are lower-case, so it's self.actors, not self.Actors.'''
 
-		self.json = requests.get(self.req_url, timeout=self.req_timeout, params=self.req_params).content
+		try:
+			self.json = requests.get(self.req_url, timeout=self.req_timeout, params=self.req_params).content
+		except requests.RequestException, ex:
+			raise MovieError('Movie error: <%s> %s' % (ex.__class__.__name__, ex))
 
 		# there must be an easy way to lower() all keys of a dict
 		info = dict()
-		for k, v in json.loads(self.json).iteritems():
-			lk = k.lower()
-			info[lk] = v
+		res = json.loads(self.json)
+		for k, v in res.iteritems():
+			if k == 'Response':
+				if v == 'False' or not v:
+					raise MovieError('Error retrieving movie: %s' % res.get('Error', 'Unknown'))
+			else:
+				lk = k.lower()
+				info[lk] = v
 
 		self._info = info
 		return self._info
@@ -131,12 +144,33 @@ class Movie(object):
 		return str(self.info)
 
 if __name__ == '__main__':
+	import optparse
+
+	parser = optparse.OptionParser()
+	parser.add_option('-t', '--timeout', dest='timeout', type='int',
+		help='set networking timeout', metavar='SECS', default=DEFAULT_TIMEOUT)
+	options, movies = parser.parse_args()
+
+	def usage(exit_code=0):
+		print 'Usage:'
+		print '  $ python pymdb.py [OPTIONS...] [MOVIE-TITLE...]'
+		print
+		print 'Where options are:'
+		print '  -h          This help message'
+		print '  -t[N]       Set HTTP timeout to N seconds (default=%i)' % DEFAULT_TIMEOUT
+		print
+		print 'Example:'
+		print '  $ python pymdb.py "true lies"'
+		print '  $ python pymdb.py -t5 "true lies"'
+		sys.exit(exit_code)
+
 	def tabular(movie):
+		print '----[ %s ] --------------------------------------' % movie.req_title
 		movie.fetch()
 		sz = len(reduce(lambda x, y: x if len(x) > len(y) else y, movie.info))
 
 		def print_entry(sz, name, value):
-			print '%s:%s %s' % (name.capitalize(), ' '*(sz-len(name)), value)
+			print '%s:%s %s' % (name.lower().capitalize(), ' '*(sz-len(name)), value)
 
 		print_entry(sz, 'title', '%s (%i)' % (movie.title, int(movie.year)))
 		print_entry(sz, 'genre', movie.genre)
@@ -149,5 +183,8 @@ if __name__ == '__main__':
 			if k not in first:
 				print_entry(sz, k, v)
 
-	for title in sys.argv[1:]:
-		tabular(Movie(title))
+	for title in movies:
+		try:
+			tabular(Movie(title, timeout=options.timeout))
+		except MovieError, ex:
+			print ex
