@@ -1,6 +1,6 @@
-pymdb
-=====
-
+#!/usr/bin/env python
+# coding: utf-8
+__doc__ = """
 Python module to retrieve IMDB movie info from <http://www.imdbapi.org>.
 
 ## Examples
@@ -48,3 +48,52 @@ Mateus Caruccio <mateus@caruccio.com>
 Permission to use, modify, and distribute this software is given under the
 terms of the BSD Lincense.
 NO WARRANTY IS EXPRESSED OR IMPLIED.  USE AT YOUR OWN RISK.
+"""
+
+__title__ = 'pymdb'
+__version__ = '0.1'
+__license__ = 'BSD'
+__author__ = """Mateus Caruccio <mateus@caruccio.com>"""
+__copyright__ = 'Copyright 2012 Mateus Caruccio'
+
+__all__ = [ 'Movie' ]
+
+import sys, requests
+
+class Movie(object):
+	# IMDBAPI is dead slow. Please, donate some nice hardware to them.
+	timeout = 15
+
+	def __init__(self, title, url=None, params=None):
+		self.title = title
+		self.url = url if url else 'http://www.imdbapi.com/'
+		self.params = params if params else { 'r': 'json', 'plot': 'full', 't': title }
+		self.content = None
+
+	def fetch(self):
+		self.content = eval(requests.get(self.url, timeout=self.timeout, params=self.params).content) # it should be json
+		return self.content
+
+	def __str__(self):
+		if not self.content:
+			return '%s' % self.fetch()
+		else:
+			return self.content
+
+if __name__ == '__main__':
+	def tabular(movie):
+		sz = len(reduce(lambda x, y: x if len(x) > len(y) else y, movie))
+		header = [ 'Title', 'Genre', 'Year', 'imdbRating' ] # print first
+
+		def print_entry(sz, name, value):
+			print '%s:%s %s' % (name, ' '*(sz-len(name)), value)
+
+		for h in header:
+			v = movie[h]
+			print_entry(sz, h, v)
+		for k, v in movie.iteritems():
+			if k not in header:
+				print_entry(sz, k, v)
+
+	for title in sys.argv[1:]:
+		tabular(Movie(title).fetch())
