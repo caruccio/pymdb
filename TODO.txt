@@ -1,0 +1,4 @@
+- case-insensitive field names
+- automatic download of poster image
+- parse comma-separede values as list()s
+- parse data-like values as date/time objects
