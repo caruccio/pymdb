@@ -1,4 +1,6 @@
-- case-insensitive field names
+DONE - case-insensitive field names
+- allow query by yeay
+- ensure some consistency
 - automatic download of poster image
-- parse comma-separede values as list()s
+- parse list-like values as list()
 - parse data-like values as date/time objects
