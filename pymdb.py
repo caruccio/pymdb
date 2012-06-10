@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 __doc__ = """
-Python module to retrieve IMDB movie info from <http://www.imdbapi.org>.
+Python module to retrieve IMDB movie info from <http://www.imdbapi.org>
 
 ## Examples
 
@@ -45,13 +45,12 @@ Python module to retrieve IMDB movie info from <http://www.imdbapi.org>.
 
 Copyright 2012 Mateus Caruccio, all rights reserved,
 Mateus Caruccio <mateus@caruccio.com>
-Permission to use, modify, and distribute this software is given under the
-terms of the BSD Lincense.
-NO WARRANTY IS EXPRESSED OR IMPLIED.  USE AT YOUR OWN RISK.
+Permission is given under the terms of the DWTFYW License (see file LICENSE.txt).
+NO WARRANTY IS EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
 """
 
 __title__ = 'pymdb'
-__version__ = '0.1'
+__version__ = '0.0.1'
 __license__ = 'BSD'
 __author__ = """Mateus Caruccio <mateus@caruccio.com>"""
 __copyright__ = 'Copyright 2012 Mateus Caruccio'

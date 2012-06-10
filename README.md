@@ -45,6 +45,5 @@ Python module to retrieve IMDB movie info from <http://www.imdbapi.org>.
 
 Copyright 2012 Mateus Caruccio, all rights reserved,
 Mateus Caruccio <mateus@caruccio.com>
-Permission to use, modify, and distribute this software is given under the
-terms of the BSD Lincense.
-NO WARRANTY IS EXPRESSED OR IMPLIED.  USE AT YOUR OWN RISK.
+Permission is given under the terms of the DWTFYW License (see file LICENSE.txt).
+NO WARRANTY IS EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
