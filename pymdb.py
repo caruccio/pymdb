@@ -58,6 +58,7 @@ __copyright__ = 'Copyright 2012 Mateus Caruccio'
 __all__ = [ 'Movie' ]
 
 import sys, requests
+import json
 
 class Movie(object):
 	# IMDBAPI is dead slow. Please, donate some nice hardware to them.
@@ -70,7 +71,8 @@ class Movie(object):
 		self.content = None
 
 	def fetch(self):
-		self.content = eval(requests.get(self.url, timeout=self.timeout, params=self.params).content) # it should be json
+		json_content = requests.get(self.url, timeout=self.timeout, params=self.params).content
+		self.content = json.loads(json_content)
 		return self.content
 
 	def __str__(self):
