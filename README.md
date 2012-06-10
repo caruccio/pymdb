@@ -43,7 +43,9 @@ Python module to retrieve IMDB movie info from <http://www.imdbapi.org>.
 
 ## Boring stuff
 
-Copyright 2012 Mateus Caruccio, all rights reserved,
-Mateus Caruccio <mateus@caruccio.com>
-Permission is given under the terms of the DWTFYW License (see file LICENSE.txt).
-NO WARRANTY IS EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+### License
+
+    Copyright 2012 Mateus Caruccio, all rights reserved.
+    Mateus Caruccio <mateus@caruccio.com>
+    Permission is given under the terms of the DWTFYW License (see file LICENSE).
+    NO WARRANTY IS EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
