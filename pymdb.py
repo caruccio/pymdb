@@ -26,7 +26,8 @@ Python module to retrieve IMDB movie info from <http://www.imdbapi.org>
 
 Output is formated for humans:
 
-    $ python pymdb.py 'true lies'
+    $ python ./pymdb.py 'true lies'
+    ---- query:  ['true lies']
     Title:      True Lies (1994)
     Genre:      Action, Thriller
     Rating:     7.2 (107,213 votes)
@@ -39,7 +40,20 @@ Output is formated for humans:
     Actors:     Arnold Schwarzenegger, Jamie Lee Curtis, Tom Arnold, Bill Paxton
     Imdbid:     tt0111503
     Runtime:    2 h 21 min
-    Response:   True
+
+Print only specific fields:
+
+    $ python ./pymdb.py 'true lies' -f year,genre
+    ---- query:  ['true lies']
+    ---- fields: ['year', 'genre']
+    Year:  1994
+    Genre: Action, Thriller
+
+Be quiet about parameters:
+
+    $ python ./pymdb.py 'true lies' -f year,genre -q
+    Year:  1994
+    Genre: Action, Thriller
 
 ## Bugs
 
@@ -87,9 +101,16 @@ class Movie(object):
 	>>> m.title
 	u'True Grit'
 
-	The first time you access a movie attribute, if necessary, it will be
-	fetch()ed from IMDBAPI. To refresh the data simply call fetch(). All attributes
-	will be fetch()ed at once, not one by one.'''
+	The first time a movie attribute is accessed, if needed, it trigger a
+	fetch()ed from IMDBAPI. To refresh the data simply call fetch() again.
+	All attributes will be fetch()ed at once, not one by one.
+
+	A list of available movie attributes is available in Movie.fields, but
+	its content may vary since depends on implementation from http://www.imdbapi.com.'''
+
+	# this attribute may and probably will vary
+	fields = [ 'title', 'genre', 'rating', 'director', 'writer' 'plot',
+	           'rated', 'poster', 'released', 'actors', 'imdbid', 'runtime' ]
 
 	def __init__(self, title, url=None, params=None, timeout=DEFAULT_TIMEOUT):
 		self.req_title = title
@@ -147,44 +168,65 @@ if __name__ == '__main__':
 	import optparse
 
 	parser = optparse.OptionParser()
+
+	parser.add_option('-f', '--fields', dest='fields', type='str',
+		help='print comma separated fields only ("?" print available fields)',
+		metavar='FIELDS', default='all')
+
 	parser.add_option('-t', '--timeout', dest='timeout', type='int',
 		help='set networking timeout', metavar='SECS', default=DEFAULT_TIMEOUT)
+
+	parser.add_option("-i", "--ignore-error",
+		action="store_true", dest="ignore_error", default=False,
+		help='ignore errors and try next movie')
+
+	parser.add_option("-q", "--quiet",
+		action="store_false", dest="verbose", default=True,
+		help='do not print header with original request')
+
 	options, movies = parser.parse_args()
 
-	def usage(exit_code=0):
-		print 'Usage:'
-		print '  $ python pymdb.py [OPTIONS...] [MOVIE-TITLE...]'
-		print
-		print 'Where options are:'
-		print '  -h          This help message'
-		print '  -t[N]       Set HTTP timeout to N seconds (default=%i)' % DEFAULT_TIMEOUT
-		print
-		print 'Example:'
-		print '  $ python pymdb.py "true lies"'
-		print '  $ python pymdb.py -t5 "true lies"'
-		sys.exit(exit_code)
+	if options.fields == '?':
+		print 'Available fields:'
+		for f in Movie.fields:
+			print f
+		sys.exit(0)
 
-	def tabular(movie):
-		print '----[ %s ] --------------------------------------' % movie.req_title
+	def print_entry(sz, name, value):
+		print '%s:%s %s' % (name.lower().capitalize(), ' '*(sz-len(name)), value)
+
+	def tabular(movie, fields):
+		if options.verbose:
+			print '---- query:  [\'%s\']' % movie.req_title
+			if fields is not Movie.fields:
+				print '---- fields: %s' % fields
 		movie.fetch()
-		sz = len(reduce(lambda x, y: x if len(x) > len(y) else y, movie.info))
+		sz = len(reduce(lambda x, y: x if len(x) > len(y) else y, fields))
 
-		def print_entry(sz, name, value):
-			print '%s:%s %s' % (name.lower().capitalize(), ' '*(sz-len(name)), value)
+		if fields is Movie.fields:
+			print_entry(sz, 'title', '%s (%i)' % (movie.title, int(movie.year)))
+			print_entry(sz, 'genre', movie.genre)
+			print_entry(sz, 'rating', '%s (%s votes)' % (movie.imdbrating, movie.imdbvotes))
+			print_entry(sz, 'director', movie.director)
+			print_entry(sz, 'writer', movie.writer)
 
-		print_entry(sz, 'title', '%s (%i)' % (movie.title, int(movie.year)))
-		print_entry(sz, 'genre', movie.genre)
-		print_entry(sz, 'rating', '%s (%s votes)' % (movie.imdbrating, movie.imdbvotes))
-		print_entry(sz, 'director', movie.director)
-		print_entry(sz, 'writer', movie.writer)
+			first = [ 'title', 'year', 'genre', 'imdbrating', 'imdbvotes', 'writer', 'director' ]
+			for k, v in movie.info.iteritems():
+				if k not in first:
+					print_entry(sz, k, v)
+		else:
+			for f in fields:
+				print_entry(sz, f, movie.info[f])
 
-		first = [ 'title', 'year', 'genre', 'imdbrating', 'imdbvotes', 'writer', 'director' ]
-		for k, v in movie.info.iteritems():
-			if k not in first:
-				print_entry(sz, k, v)
+	if options.fields == 'all':
+		fields = Movie.fields
+	else:
+		fields = [ f.strip().lower() for f in options.fields.split(',') ]
 
 	for title in movies:
 		try:
-			tabular(Movie(title, timeout=options.timeout))
+			tabular(Movie(title, timeout=options.timeout), fields)
 		except MovieError, ex:
 			print ex
+			if not options.ignore_error:
+				sys.exit(1)
