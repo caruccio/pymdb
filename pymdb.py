@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 __doc__ = """
-Python module to retrieve IMDB movie info from <http://www.imdbapi.org>
+Python module to retrieve IMDB movie info from <http://www.imdbapi.com>
 
 ## Examples
 
@@ -69,7 +69,7 @@ Patches are welcome.
 
 ### Disclaimer
 
-I have nothing to do with IMDBAPI <http://www.imdbapi.org>.
+I have nothing to do with IMDBAPI <http://www.imdbapi.com>.
 If they are down, please be patient.
 """
 
