@@ -135,11 +135,17 @@ class Movie(object):
 		info = dict()
 		res = json.loads(self.json)
 		for k, v in res.iteritems():
-			if k == 'Response':
-				if v == 'False' or not v:
+			lk = k.lower()
+			if lk == 'response':
+				if v == 'false' or not v:
 					raise MovieError('Error retrieving movie: %s' % res.get('Error', 'Unknown'))
+			elif lk in [ 'genre', 'actors', 'director', 'writer' ]:
+				info[lk] = [ x.strip() for x in v.split(',') ]
+			elif lk == 'year':
+				info[lk] = int(v)
+			elif lk == 'imdbrating':
+				info[lk] = float(v)
 			else:
-				lk = k.lower()
 				info[lk] = v
 
 		self._info = info
@@ -205,12 +211,13 @@ if __name__ == '__main__':
 
 		if fields is Movie.fields:
 			print_entry(sz, 'title', '%s (%i)' % (movie.title, int(movie.year)))
-			print_entry(sz, 'genre', movie.genre)
+			print_entry(sz, 'genre', ','.join(movie.genre))
 			print_entry(sz, 'rating', '%s (%s votes)' % (movie.imdbrating, movie.imdbvotes))
-			print_entry(sz, 'director', movie.director)
-			print_entry(sz, 'writer', movie.writer)
+			print_entry(sz, 'director', ','.join(movie.director))
+			print_entry(sz, 'writer', ','.join(movie.writer))
+			print_entry(sz, 'actors', ','.join(movie.actors))
 
-			first = [ 'title', 'year', 'genre', 'imdbrating', 'imdbvotes', 'writer', 'director' ]
+			first = [ 'title', 'year', 'genre', 'imdbrating', 'imdbvotes', 'writer', 'director', 'actors' ]
 			for k, v in movie.info.iteritems():
 				if k not in first:
 					print_entry(sz, k, v)
