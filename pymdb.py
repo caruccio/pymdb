@@ -83,6 +83,10 @@ __all__ = [ 'Movie', 'MovieError' ]
 
 import sys, requests
 import json
+try:
+	from cStringIO import StringIO
+except:
+	from StringIO import StringIO
 
 DEFAULT_TIMEOUT = 15
 
@@ -90,7 +94,8 @@ class MovieError(Exception):
 	'''There was an error while retrieving movie information'''
 
 class Movie(object):
-	'''Retrieve information from IMDBAPI (http::/www.imdbapi.com, please support them).
+	'''
+	Retrieve information from IMDBAPI (http::/www.imdbapi.com, please support them).
 
 	To use it, simply instanciate an object and access the movie attributes.
 
@@ -106,18 +111,37 @@ class Movie(object):
 	All attributes will be fetch()ed at once, not one by one.
 
 	A list of available movie attributes is available in Movie.fields, but
-	its content may vary since depends on implementation from http://www.imdbapi.com.'''
+	its content may vary since depends on implementation from http://www.imdbapi.com.
+
+	If download is supplied with a list of field names, those fields will be
+	treated as URLs to download. Its content will be stored in 'download' dict() where
+	key is the name of th field and value is the fetched content stored as a file-like
+	object. If download is set to 'all', then all fields containing
+	URLs are download. Failling downloads are stored as None.
+	'''
 
 	# this attribute may and probably will vary
 	fields = [ 'title', 'genre', 'rating', 'director', 'writer' 'plot',
 	           'rated', 'poster', 'released', 'actors', 'imdbid', 'runtime' ]
 
-	def __init__(self, title, url=None, params=None, timeout=DEFAULT_TIMEOUT):
+	def __init__(self, title, url=None, params=None, timeout=DEFAULT_TIMEOUT, download=None):
 		self.req_title = title
 		self.req_url = url if url else 'http://www.imdbapi.com/'
 		self.req_params = params if params else { 'r': 'json', 'plot': 'full', 't': self.req_title }
 		self.req_timeout = timeout
 		self._info = None
+		if download == 'all' or not download:
+			pass
+		elif isinstance(download, str):
+			download = [ download ]
+		elif isinstance(download, (list, tuple)):
+			for d in download:
+				if not isinstance(d, str):
+					raise TypeError('Invalid parameter: download expects str() or a list of str()')
+		else:
+			raise TypeError('Invalid parameter: download expects str() or a list of str()')
+		self._ret_fields = download
+		self.download = {}
 
 	def fetch(self):
 		'''Performs an HTTP request to IMDBAPI and store movie info as a dict() in self.content.
@@ -128,25 +152,33 @@ class Movie(object):
 
 		try:
 			self.json = requests.get(self.req_url, timeout=self.req_timeout, params=self.req_params).content
-		except requests.RequestException, ex:
+		except (requests.ConnectionError, requests.RequestException), ex:
 			raise MovieError('Movie error: <%s> %s' % (ex.__class__.__name__, ex))
 
 		# there must be an easy way to lower() all keys of a dict
 		info = dict()
 		res = json.loads(self.json)
 		for k, v in res.iteritems():
-			lk = k.lower()
-			if lk == 'response':
+			k = k.lower()
+			if k == 'response':
 				if v == 'false' or not v:
 					raise MovieError('Error retrieving movie: %s' % res.get('Error', 'Unknown'))
-			elif lk in [ 'genre', 'actors', 'director', 'writer' ]:
-				info[lk] = [ x.strip() for x in v.split(',') ]
-			elif lk == 'year':
-				info[lk] = int(v)
-			elif lk == 'imdbrating':
-				info[lk] = float(v)
+			elif k in [ 'genre', 'actors', 'director', 'writer' ]:
+				info[k] = [ x.strip() for x in v.split(',') ]
+			elif k == 'year':
+				info[k] = int(v)
+			elif k == 'imdbrating':
+				info[k] = float(v)
 			else:
-				info[lk] = v
+				info[k] = v
+
+			if self._ret_fields:
+				if self._ret_fields == 'all' or k in self._ret_fields:
+					try:
+						if v.startswith('http://') or v.startswith('https://'):
+							self.download[k] = StringIO(requests.get(v.strip(), timeout=self.req_timeout).content)
+					except (requests.ConnectionError, requests.RequestException):
+						pass
 
 		self._info = info
 		return self._info
