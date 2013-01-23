@@ -9,7 +9,7 @@ Python module to retrieve IMDB movie info from <http://www.imdbapi.com>
 
     $ python
     >>> import pymdb
-    >>> movie = pymdb.Movie('zeitgeist')
+    >>> m = pymdb.Movie('zeitgeist')
     # access by movie attribute (first access will retrieve all data)
     >>> m.year
     u'2007'
